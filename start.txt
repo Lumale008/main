@@ -1,1 +1,0 @@
-npm i mysql jwt-decode express socket.io dotenv cookie-parser
