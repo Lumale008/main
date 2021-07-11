@@ -26,12 +26,12 @@ exports.register = (req, res) => {
         if (results.length > 0) {
             return res.render('register', {
                 message: 'That email is already in user',
-                style: 'style_login.css'
+                style: '../stylesheet/style_login.css'
             })
         } else if( password !== passwordconfirm) {
             return res.render('register', {
                 message: 'Passwords do not match',
-                style: 'style_login.css'
+                style: '../stylesheet/style_login.css'
             })
         }
 
@@ -44,7 +44,7 @@ exports.register = (req, res) => {
                 console.log(results)
                 return res.render('register', {
                     message: 'USER registered',
-                    style: 'style_login.css'
+                    style: '../stylesheet/style_login.css'
                 })
             }
         });
@@ -63,21 +63,21 @@ exports.login = async (req, res) => {
         if(!email || !password) {
             return res.status(400).render('login', {
                 message: 'Please provide an email and password',
-                style: 'stylesheet/style_login.css'
+                style: '../stylesheet/style_login.css'
             });
         }
         db.query('SELECT * FROM users WHERE email = ? ', [email], async (error, results) => {
             if(results.length === 0){
                  return res.status(401).render('login', {
                     message: 'Email or Password is Incorrect',
-                    style: 'stylesheet/style_login.css'
+                    style: '../stylesheet/style_login.css'
                 })
             }
 
             if(!results || !(await bcrypt.compare(password, results[0].password))) {
                 res.status(401).render('login', {
                     message: 'Email or Password is Incorrect',
-                    style: 'stylesheet/style_login.css'
+                    style: '../stylesheet/style_login.css'
                 })
             }
             else {

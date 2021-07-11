@@ -92,11 +92,13 @@ app.get("/chat", (req, res) => {
                 row = result[key];
                 playerrow.push(row.name);
             });
+            var playerrow2 = playerrow;
             res.render('../chat/chat', {
                 style: 'stylesheet/style_chat.css',
-                names: playerrow.toString()
+                names: playerrow2.toString()
             });
-            console.log(playerrow)
+            playerrow = [];
+            console.log("names:" + playerrow2)
 
         });
 
@@ -146,7 +148,6 @@ app.get("/logout", (req, res) => {
     res.render('index', {
         style: 'stylesheet/style_login.css'
     })
-
 });
 //use auth to authenticate account
 app.use('/auth', require("./routes/auth"));

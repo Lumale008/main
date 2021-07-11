@@ -40,6 +40,7 @@
             </div>
         </div>
 
+
     </div>
     <div class="wrap_chat-body" style="overflow-y: scroll; display: flex; flex-direction: column-reverse;"; >
         <div class="messages">
@@ -69,8 +70,11 @@
     document.getElementById("welcome_name").innerHTML = params.get("username");
 
     function codeAddress() {
+        document.getElementById('messages2_socket').innerHTML = "";
         var item = document.createElement('li');
-        item.textContent = "{{names}}";
+        names =  '<a href="{{names}}">{{names}}';
+        names = names.replace(/,/gi,'</a></li><li>');
+        item.innerHTML = names
         messages2.appendChild(item);
     }
 
@@ -78,11 +82,11 @@
     form.addEventListener('submit', function(e) {
                 e.preventDefault();
                 if (input.value) {
-
-
                     socket.emit('message', params.get("username"))
                     socket.emit('chat message', input.value);
                     var item = document.createElement('li');
+                    item.setAttribute("href", "hello");
+
                     item.textContent = input.value;
                     item.classList = "outgoing-message";
                     messages.appendChild(item);
