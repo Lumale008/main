@@ -12,7 +12,7 @@
 <div class="wrapper">
     <div class="wrap_sidebar">
         <div class="wrap_sidebar-header">
-            <span>Welcome:&nbsp</span>
+            <span>Welcome:&nbsp {{urname}}</span>
             <span id="welcome_name"> </span>
         </div>
 
@@ -66,27 +66,65 @@
     var form = document.getElementById('form');
     var input = document.getElementById('input')
 
+    var names_from_main = "{{names}}";
+    var ids = "{{ids}}"
+
+    names_from_main = names_from_main.replace(' ', '_')
+
+    var names_from_main_list = names_from_main.split(",");
+    var ids_list = ids.split(",");
+
+
     let params = new URLSearchParams(document.location.search.substring(1));
     document.getElementById("welcome_name").innerHTML = params.get("username");
+    const queryString = window.location.search;
+    const urlParams = new URLSearchParams(queryString);
 
     function codeAddress() {
         document.getElementById('messages2_socket').innerHTML = "";
         var item = document.createElement('li');
-        names =  '<a href="{{names}}">{{names}}';
-        names = names.replace(/,/gi,'</a></li><li>');
-        item.innerHTML = names
-        messages2.appendChild(item);
+        for (var i = 0; i < names_from_main_list.length; i++) {
+            if (ids_list[i] != "{{urid}} " && names_from_main_list[i] != "{{urname}}") {
+
+                var name = '<a href="/userchat?id=' + ids_list[i] + '">' + names_from_main_list[i] + '</a'
+                var li = document.createElement('li');
+                li.innerHTML = name;
+                messages2.appendChild(li);
+            }
+        }
+        for (var i = 0; i < {{savedmessages_size}}; i++) {
+            var savedmessages = "{{savedmessages}}"
+            var list =  savedmessages.split(',')
+            console.log(list)
+
+            if (list[i].startsWith('outgoing-message')) {
+                var listout = list[i];
+                listout = listout.substring(17)
+                var item = document.createElement('li');
+                item.textContent = listout;
+                item.classList = "outgoing-message";
+                messages.appendChild(item);
+            }
+            if (list[i].startsWith('ingoing-message')) {
+                var listin = list[i];
+                listin = listin.substring(16)
+                var item = document.createElement('li');
+                item.textContent = listin;
+                item.classList = "ingoing-message";
+                messages.appendChild(item);
+            }
+
+        }
     }
 
 
     form.addEventListener('submit', function(e) {
                 e.preventDefault();
                 if (input.value) {
-                    socket.emit('message', params.get("username"))
-                    socket.emit('chat message', input.value);
-                    var item = document.createElement('li');
-                    item.setAttribute("href", "hello");
+                    socket.emit('chat message', {msg: input.value, getter: urlParams.get("id"), emitter: {{urid}} });
 
+
+                    var item = document.createElement('li');
                     item.textContent = input.value;
                     item.classList = "outgoing-message";
                     messages.appendChild(item);
@@ -103,12 +141,15 @@
         return confirmationMessage;                            //Webkit, Safari, Chrome
     });
 
-    socket.on('chat message', function(msg) {
-        var item = document.createElement('li');
-        item.textContent = msg;
-        item.classList = "ingoing-message";
-        messages.appendChild(item);
-        window.scrollTo(0, document.body.scrollHeight);
+    socket.on('chat message', function(data) {
+        if (data.emitter == urlParams.get("id") && data.getter == {{urid}}) {
+         var msg = data.msg
+                    var item = document.createElement('li');
+                    item.textContent = msg;
+                    item.classList = "ingoing-message";
+                    messages.appendChild(item);
+                    window.scrollTo(0, document.body.scrollHeight);
+    }
     });
     window.onload = codeAddress;
 </script>

@@ -14,16 +14,6 @@ const cookieparser = require('cookie-parser');
 
 app.use(express.static(__dirname + '/public'));
 
-//connection
-io.on('connection', (socket) => {
-    //get message
-    socket.on('chat message', msg => {
-        //send message
-        socket.broadcast.emit('chat message', msg);
-    });
-});
-
-console.log('chat loaded')
 
 //import config from dotenv
 dotenv.config({ path: './.env'});
@@ -36,6 +26,8 @@ const maindb = mysql.createConnection({
     user: 'root',
     password:  '',
     database: 'nodejs_login',
+    multipleStatements: true
+
 });
 //use public folder
 app.use(express.static('./public'));
@@ -45,12 +37,19 @@ app.use(express.json())
 //set view to hbs
 //import HBS
 app.set('view engine', 'hbs')
+
+var connection =  mysql.createConnection( maindb  );
 maindb.connect( (error) => {
+
     console.log("Connected!");
 
-    var sql = "CREATE TABLE users (id int NOT NULL AUTO_INCREMENT, name VARCHAR(100), email VARCHAR(100), password VARCHAR(255), PRIMARY KEY (id))";
-    maindb.query(sql, function (error, result) {
+    var userssql = "CREATE TABLE users (id int NOT NULL AUTO_INCREMENT, name VARCHAR(100), email VARCHAR(100), password VARCHAR(255), PRIMARY KEY (id))";
+    maindb.query(userssql, function (error, result) {
         console.log("Users table created");
+    });
+    var messagessql = "CREATE TABLE messages (emitter INT(255), getter INT(255), message VARCHAR(255))";
+    maindb.query(messagessql, function (error, result) {
+        console.log("Messages table created");
     });
     if (error) {
         console.log(error)
@@ -58,8 +57,27 @@ maindb.connect( (error) => {
         console.log("MainDB Connected")
     }
 });
+//connection
+io.on('connection', (socket) => {
+    //get message
+    socket.on('chat message',function(data) {
+        // do something with data
+        socket.broadcast.emit('chat message', {msg: data.msg, getter: data.getter, emitter: data.emitter});
+        maindb.query('INSERT INTO messages SET ?', {emitter: data.emitter, getter: data.getter, message: data.msg}, (error) =>{
+            if(error) {
+                console.log(error);
+            }
+        });
+    });
+});
+
+console.log('chat loaded')
+
+
+
 var row = [];
-var playerrow =[];
+var names =[];
+var ids = [];
 
 //on "/" render mainpage if cookie than render logged in
 app.get("/", (req, res) => {
@@ -84,21 +102,38 @@ app.get("/chat", (req, res) => {
         var id = jwt_decode(unid);
         console.log(id.id)
         maindb.query("SELECT * FROM users", function (err, result, fields) {
+            maindb.query('SELECT * FROM users WHERE id = ? ', [id.id], async (error, results) => {
+                var ur_id = results[0].id;
+                var ur_name = results[0].name;
+                var ur_email = results[0].email;
+
+
             // if any error while executing above query, throw error
             if (err) throw err;
             // if there is no error, you have the result
             // iterate for all the rows in result
             Object.keys(result).forEach(function(key) {
                 row = result[key];
-                playerrow.push(row.name);
+                names.push(row.name);
+                ids.push(row.id);
+
             });
-            var playerrow2 = playerrow;
-            res.render('../chat/chat', {
-                style: 'stylesheet/style_chat.css',
-                names: playerrow2.toString()
+            var ids2 = ids;
+            var names2 = names;
+            res.render('../chat/ChatSelection', {
+                style: 'stylesheet/style_login.css',
+                names: names2.toString(),
+                ids: ids2,
+                urname: ur_name,
+                urid: ur_id,
+                uremail: ur_email
             });
-            playerrow = [];
-            console.log("names:" + playerrow2)
+            names = [];
+            ids = [];
+            console.log("urname " + ur_name)
+            console.log("names: " + names2)
+            console.log("ids: " + ids2)
+            });
 
         });
 
@@ -149,8 +184,10 @@ app.get("/logout", (req, res) => {
         style: 'stylesheet/style_login.css'
     })
 });
+app.use('/userchat', require("./routes/userchat"));
 //use auth to authenticate account
 app.use('/auth', require("./routes/auth"));
+
 
 //listen to port
 http.listen(port, () => {
